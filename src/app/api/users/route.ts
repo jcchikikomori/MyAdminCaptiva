@@ -1,12 +1,29 @@
 import { NextResponse } from 'next/server';
-import { initialUsers } from '@/lib/data';
-
-// In a real application, this data would come from a database.
-// For this demo, we'll use the static data from `lib/data.ts`
-// and simulate state changes on the client side only.
+import { getStorage } from '@/lib/storage';
+import { addUserFormSchema } from '@/lib/types';
 
 export async function GET() {
-  // The API always returns the initial static list.
-  // The client-side state will manage additions/deletions for the demo.
-  return NextResponse.json(initialUsers);
+  try {
+    const storage = getStorage();
+    const users = await storage.getUsers();
+    return NextResponse.json(users);
+  } catch (e: any) {
+    return NextResponse.json({ error: e?.message || 'Failed to fetch users' }, { status: 500 });
+  }
 }
+
+export async function POST(req: Request) {
+  try {
+    const storage = getStorage();
+    const body = await req.json();
+    const parsed = addUserFormSchema.safeParse(body);
+    if (!parsed.success) {
+      return NextResponse.json({ error: 'Invalid payload' }, { status: 400 });
+    }
+    const user = await storage.addUser({ ...parsed.data });
+    return NextResponse.json(user, { status: 201 });
+  } catch (e: any) {
+    return NextResponse.json({ error: e?.message || 'Failed to add user' }, { status: 500 });
+  }
+}
+

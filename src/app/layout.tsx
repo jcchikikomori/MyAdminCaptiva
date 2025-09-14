@@ -3,7 +3,7 @@ import { Toaster } from "@/components/ui/toaster";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Captive Portal Manager",
+  title: "MyAdminCaptiva",
   description: "Manage guest accounts for your captive portal.",
 };
 

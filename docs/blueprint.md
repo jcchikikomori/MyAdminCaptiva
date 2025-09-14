@@ -1,4 +1,4 @@
-# **App Name**: Captive Portal Manager
+# **App Name**: MyAdminCaptiva
 
 ## Core Features:
 
