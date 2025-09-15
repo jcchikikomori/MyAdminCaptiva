@@ -11,7 +11,7 @@ const PageHeader = () => {
     router.replace('/login');
   };
   return (
-    <div className="text-center relative">
+    <div className="relative text-center flex flex-col items-center">
       <h1 className="text-4xl font-bold tracking-tight text-foreground sm:text-5xl lg:text-6xl font-headline">
         MyAdminCaptiva
       </h1>
@@ -19,8 +19,8 @@ const PageHeader = () => {
         Easily manage guest accounts for your captive portal.
       </p>
       {isAuthenticated && (
-        <div className="absolute right-0 top-0">
-          <Button variant="outline" onClick={handleLogout}>Log out</Button>
+        <div className="mt-4 sm:mt-0 sm:absolute sm:right-0 sm:top-0">
+          <Button variant="outline" size="sm" onClick={handleLogout}>Log out</Button>
         </div>
       )}
     </div>

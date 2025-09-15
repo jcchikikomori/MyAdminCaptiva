@@ -72,7 +72,7 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-background">
-      <main className="container mx-auto px-4 py-8 md:py-12">
+      <main className="container-fluid container-xl mx-auto px-4 py-8 md:py-12">
         <PageHeader />
         <div className="mt-8 grid grid-cols-1 gap-8 lg:grid-cols-5">
           {isAuthenticated && (
