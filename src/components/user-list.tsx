@@ -34,6 +34,7 @@ import {
 interface UserListProps {
   users: User[];
   onDeleteUser: (id: string) => void;
+  canDelete?: boolean;
 }
 
 const formatBytes = (bytes: number) => {
@@ -47,7 +48,7 @@ const formatBytes = (bytes: number) => {
 
 import { useState } from 'react';
 
-export default function UserList({ users, onDeleteUser }: UserListProps) {
+export default function UserList({ users, onDeleteUser, canDelete = false }: UserListProps) {
   const [showPassword, setShowPassword] = useState<Record<string, boolean>>({});
   const [showMac, setShowMac] = useState<Record<string, boolean>>({});
 
@@ -69,13 +70,13 @@ export default function UserList({ users, onDeleteUser }: UserListProps) {
                 <TableHead>Password</TableHead>
                 <TableHead>MAC Address</TableHead>
                 <TableHead>Limits (Up/Down)</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
+                {canDelete && <TableHead className="text-right">Actions</TableHead>}
               </TableRow>
             </TableHeader>
             <TableBody>
               {users.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={5} className="h-24 text-center">
+                  <TableCell colSpan={canDelete ? 5 : 4} className="h-24 text-center">
                     No users found. Add one to get started!
                   </TableCell>
                 </TableRow>
@@ -120,6 +121,7 @@ export default function UserList({ users, onDeleteUser }: UserListProps) {
                     <TableCell>
                       {formatBytes(user.uploadLimitBites)} / {formatBytes(user.downloadLimitBites)}
                     </TableCell>
+                    {canDelete && (
                     <TableCell className="text-right">
                        <AlertDialog>
                         <AlertDialogTrigger asChild>
@@ -147,6 +149,7 @@ export default function UserList({ users, onDeleteUser }: UserListProps) {
                         </AlertDialogContent>
                       </AlertDialog>
                     </TableCell>
+                    )}
                   </TableRow>
                 ))
               )}

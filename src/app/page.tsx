@@ -6,21 +6,17 @@ import AddUserForm from '@/components/add-user-form';
 import UserList from '@/components/user-list';
 import PageHeader from '@/components/page-header';
 import { useAuth } from '@/lib/auth/context';
-import { useRouter } from 'next/navigation';
 
 export default function Home() {
   const [users, setUsers] = useState<User[]>([]);
   const { isAuthenticated, authHeader } = useAuth();
-  const router = useRouter();
 
   useEffect(() => {
-    if (!isAuthenticated) {
-      router.replace('/login');
-      return;
-    }
     const load = async () => {
       try {
-        const res = await fetch('/api/users', { cache: 'no-store', headers: { ...authHeader() } });
+        // GET is open for read-only; send auth header if present
+        const headers = authHeader();
+        const res = await fetch('/api/users', { cache: 'no-store', headers: { ...headers } });
         if (res.ok) {
           const data = await res.json();
           setUsers(data);
@@ -69,11 +65,13 @@ export default function Home() {
       <main className="container mx-auto px-4 py-8 md:py-12">
         <PageHeader />
         <div className="mt-8 grid grid-cols-1 gap-8 lg:grid-cols-5">
-          <div className="lg:col-span-2">
-            <AddUserForm onAddUser={handleAddUser} />
-          </div>
+          {isAuthenticated && (
+            <div className="lg:col-span-2">
+              <AddUserForm onAddUser={handleAddUser} />
+            </div>
+          )}
           <div className="lg:col-span-3">
-            <UserList users={users} onDeleteUser={handleDeleteUser} />
+            <UserList users={users} onDeleteUser={handleDeleteUser} canDelete={isAuthenticated} />
           </div>
         </div>
       </main>

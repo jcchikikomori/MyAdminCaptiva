@@ -3,10 +3,8 @@ import { getStorage } from '@/lib/storage';
 import { addUserFormSchema } from '@/lib/types';
 import { requireAuth } from '@/lib/auth/server';
 
-export async function GET(req: Request) {
+export async function GET(_req: Request) {
   try {
-    const auth = requireAuth(req);
-    if (!auth.ok) return auth.res!;
     const storage = getStorage();
     const users = await storage.getUsers();
     return NextResponse.json(users);
