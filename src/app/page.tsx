@@ -5,14 +5,22 @@ import type { User, AddUserFormValues } from '@/lib/types';
 import AddUserForm from '@/components/add-user-form';
 import UserList from '@/components/user-list';
 import PageHeader from '@/components/page-header';
+import { useAuth } from '@/lib/auth/context';
+import { useRouter } from 'next/navigation';
 
 export default function Home() {
   const [users, setUsers] = useState<User[]>([]);
+  const { isAuthenticated, authHeader } = useAuth();
+  const router = useRouter();
 
   useEffect(() => {
+    if (!isAuthenticated) {
+      router.replace('/login');
+      return;
+    }
     const load = async () => {
       try {
-        const res = await fetch('/api/users', { cache: 'no-store' });
+        const res = await fetch('/api/users', { cache: 'no-store', headers: { ...authHeader() } });
         if (res.ok) {
           const data = await res.json();
           setUsers(data);
@@ -22,7 +30,7 @@ export default function Home() {
       }
     };
     load();
-  }, []);
+  }, [isAuthenticated]);
 
   const handleAddUser = (data: AddUserFormValues) => {
     // submit to API; on success, prepend to list
@@ -30,7 +38,7 @@ export default function Home() {
       try {
         const res = await fetch('/api/users', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 'Content-Type': 'application/json', ...authHeader() },
           body: JSON.stringify(data),
         });
         if (res.ok) {
@@ -46,7 +54,7 @@ export default function Home() {
   const handleDeleteUser = (id: string) => {
     (async () => {
       try {
-        const res = await fetch(`/api/users/${id}`, { method: 'DELETE' });
+        const res = await fetch(`/api/users/${id}`, { method: 'DELETE', headers: { ...authHeader() } });
         if (res.ok) {
           setUsers(prev => prev.filter(u => u.id !== id));
         }

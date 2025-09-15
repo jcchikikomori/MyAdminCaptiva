@@ -45,7 +45,15 @@ const formatBytes = (bytes: number) => {
 };
 
 
+import { useState } from 'react';
+
 export default function UserList({ users, onDeleteUser }: UserListProps) {
+  const [showPassword, setShowPassword] = useState<Record<string, boolean>>({});
+  const [showMac, setShowMac] = useState<Record<string, boolean>>({});
+
+  const togglePassword = (id: string) => setShowPassword(prev => ({ ...prev, [id]: !prev[id] }));
+  const toggleMac = (id: string) => setShowMac(prev => ({ ...prev, [id]: !prev[id] }));
+
   return (
     <Card>
       <CardHeader>
@@ -76,11 +84,35 @@ export default function UserList({ users, onDeleteUser }: UserListProps) {
                   <TableRow key={user.id}>
                     <TableCell className="font-medium">{user.username}</TableCell>
                     <TableCell>
-                      <span className="font-mono">{user.password}</span>
+                      <div className="d-flex align-items-center gap-2">
+                        <span className="font-mono">
+                          {showPassword[user.id] ? user.password : '••••••••'}
+                        </span>
+                        <button
+                          type="button"
+                          className="btn btn-sm btn-outline-secondary"
+                          aria-label={showPassword[user.id] ? `Hide password for ${user.username}` : `Show password for ${user.username}`}
+                          onClick={() => togglePassword(user.id)}
+                        >
+                          <i className={`bi ${showPassword[user.id] ? 'bi-eye-slash' : 'bi-eye'}`}></i>
+                        </button>
+                      </div>
                     </TableCell>
                     <TableCell>
                       {user.macAddress ? (
-                        <Badge variant="secondary" className="font-mono">{user.macAddress}</Badge>
+                        <div className="d-flex align-items-center gap-2">
+                          <Badge variant="secondary" className="font-mono">
+                            {showMac[user.id] ? user.macAddress : '••:••:••:••:••:••'}
+                          </Badge>
+                          <button
+                            type="button"
+                            className="btn btn-sm btn-outline-secondary"
+                            aria-label={showMac[user.id] ? `Hide MAC for ${user.username}` : `Show MAC for ${user.username}`}
+                            onClick={() => toggleMac(user.id)}
+                          >
+                            <i className={`bi ${showMac[user.id] ? 'bi-eye-slash' : 'bi-eye'}`}></i>
+                          </button>
+                        </div>
                       ) : (
                         <Badge variant="outline">Not set</Badge>
                       )}
