@@ -23,6 +23,14 @@ export async function POST(req: Request) {
     if (!parsed.success) {
       return NextResponse.json({ error: 'Invalid payload' }, { status: 400 });
     }
+    // Duplicate validation: username or MAC must be unique
+    const all = await storage.getUsers();
+    const conflict = all.find(
+      u => u.username === parsed.data.username || (!!parsed.data.macAddress && u.macAddress === parsed.data.macAddress)
+    );
+    if (conflict) {
+      return NextResponse.json({ error: 'Username or MAC already exists' }, { status: 409 });
+    }
     const user = await storage.addUser({ ...parsed.data });
     return NextResponse.json(user, { status: 201 });
   } catch (e: any) {

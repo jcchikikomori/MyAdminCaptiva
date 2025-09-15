@@ -4,6 +4,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 
 import { addUserFormSchema, type AddUserFormValues } from '@/lib/types';
+import type { User } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -26,9 +27,10 @@ import { useToast } from '@/hooks/use-toast';
 
 interface AddUserFormProps {
   onAddUser: (data: AddUserFormValues) => void;
+  existingUsers: User[];
 }
 
-export default function AddUserForm({ onAddUser }: AddUserFormProps) {
+export default function AddUserForm({ onAddUser, existingUsers }: AddUserFormProps) {
   const { toast } = useToast();
 
   const form = useForm<AddUserFormValues>({
@@ -43,6 +45,17 @@ export default function AddUserForm({ onAddUser }: AddUserFormProps) {
   });
 
   const onSubmit = (values: AddUserFormValues) => {
+    const usernameExists = existingUsers.some(u => u.username === values.username);
+    const mac = values.macAddress?.trim();
+    const macExists = mac ? existingUsers.some(u => u.macAddress === mac) : false;
+    if (usernameExists || macExists) {
+      toast({
+        title: 'Duplicate Found',
+        description: usernameExists ? 'Username already exists' : 'MAC address already exists',
+        variant: 'destructive',
+      });
+      return;
+    }
     onAddUser(values);
     form.reset();
     toast({

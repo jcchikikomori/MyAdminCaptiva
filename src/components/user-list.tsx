@@ -1,6 +1,6 @@
 'use client';
 
-import { Trash2 } from 'lucide-react';
+import { Trash2, Pencil } from 'lucide-react';
 import type { User } from '@/lib/types';
 import {
   Card,
@@ -19,6 +19,9 @@ import {
 } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { useAuth } from '@/lib/auth/context';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -34,6 +37,7 @@ import {
 interface UserListProps {
   users: User[];
   onDeleteUser: (id: string) => void;
+  onUpdateUser: (user: User) => void;
   canDelete?: boolean;
 }
 
@@ -48,9 +52,14 @@ const formatBytes = (bytes: number) => {
 
 import { useState } from 'react';
 
-export default function UserList({ users, onDeleteUser, canDelete = false }: UserListProps) {
+export default function UserList({ users, onDeleteUser, onUpdateUser, canDelete = false }: UserListProps) {
   const [showPassword, setShowPassword] = useState<Record<string, boolean>>({});
   const [showMac, setShowMac] = useState<Record<string, boolean>>({});
+  const { authHeader, isAuthenticated } = useAuth();
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [form, setForm] = useState<{ username: string; password: string; macAddress: string; uploadLimitBites: number; downloadLimitBites: number }>({ username: '', password: '', macAddress: '', uploadLimitBites: 0, downloadLimitBites: 0 });
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const togglePassword = (id: string) => setShowPassword(prev => ({ ...prev, [id]: !prev[id] }));
   const toggleMac = (id: string) => setShowMac(prev => ({ ...prev, [id]: !prev[id] }));
@@ -122,7 +131,98 @@ export default function UserList({ users, onDeleteUser, canDelete = false }: Use
                       {formatBytes(user.uploadLimitBites)} / {formatBytes(user.downloadLimitBites)}
                     </TableCell>
                     {canDelete && (
-                    <TableCell className="text-right">
+                    <TableCell className="text-right space-x-1">
+                       <Dialog>
+                         <DialogTrigger asChild>
+                           <Button
+                             variant="ghost"
+                             size="icon"
+                             aria-label={`Edit user ${user.username}`}
+                             onClick={() => {
+                               setEditingId(user.id);
+                               setForm({
+                                 username: user.username,
+                                 password: user.password,
+                                 macAddress: user.macAddress || '',
+                                 uploadLimitBites: user.uploadLimitBites,
+                                 downloadLimitBites: user.downloadLimitBites,
+                               });
+                               setError(null);
+                             }}
+                           >
+                             <Pencil className="h-4 w-4" />
+                           </Button>
+                         </DialogTrigger>
+                         <DialogContent>
+                           <DialogHeader>
+                             <DialogTitle>Edit Guest Account</DialogTitle>
+                             <DialogDescription>Update the fields and save changes.</DialogDescription>
+                           </DialogHeader>
+                           {error && <div className="text-sm text-destructive">{error}</div>}
+                           <div className="space-y-3">
+                             <div>
+                               <label className="block text-sm font-medium">Username</label>
+                               <Input value={form.username} onChange={(e) => setForm({ ...form, username: e.target.value })} />
+                             </div>
+                             <div>
+                               <label className="block text-sm font-medium">Password</label>
+                               <Input type="text" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} />
+                             </div>
+                             <div>
+                               <label className="block text-sm font-medium">MAC Address</label>
+                               <Input value={form.macAddress} onChange={(e) => setForm({ ...form, macAddress: e.target.value })} />
+                             </div>
+                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                               <div>
+                                 <label className="block text-sm font-medium">Upload Limit (bytes)</label>
+                                 <Input type="number" value={form.uploadLimitBites} onChange={(e) => setForm({ ...form, uploadLimitBites: Number(e.target.value) })} />
+                               </div>
+                               <div>
+                                 <label className="block text-sm font-medium">Download Limit (bytes)</label>
+                                 <Input type="number" value={form.downloadLimitBites} onChange={(e) => setForm({ ...form, downloadLimitBites: Number(e.target.value) })} />
+                               </div>
+                             </div>
+                           </div>
+                           <DialogFooter>
+                             <Button
+                               onClick={async () => {
+                                 if (!isAuthenticated) return;
+                                 setSaving(true);
+                                 setError(null);
+                                 const usernameExists = users.some(u => u.id !== (editingId as string) && u.username === form.username);
+                                 const mac = form.macAddress?.trim();
+                                 const macExists = mac ? users.some(u => u.id !== (editingId as string) && u.macAddress === mac) : false;
+                                 if (usernameExists || macExists) {
+                                   setError(usernameExists ? 'Username already exists' : 'MAC address already exists');
+                                   setSaving(false);
+                                   return;
+                                 }
+                                 try {
+                                   const res = await fetch(`/api/users/${editingId}`, {
+                                     method: 'PATCH',
+                                     headers: { 'Content-Type': 'application/json', ...authHeader() },
+                                     body: JSON.stringify(form),
+                                   });
+                                   if (!res.ok) {
+                                     const msg = await res.json().catch(() => ({ error: 'Failed to update' }));
+                                     throw new Error(msg.error || 'Failed to update');
+                                   }
+                                   const updated: User = await res.json();
+                                   onUpdateUser(updated);
+                                   setEditingId(null);
+                                 } catch (e: any) {
+                                   setError(e?.message || 'Failed to update');
+                                 } finally {
+                                   setSaving(false);
+                                 }
+                               }}
+                               disabled={saving}
+                             >
+                               {saving ? 'Saving…' : 'Save changes'}
+                             </Button>
+                           </DialogFooter>
+                         </DialogContent>
+                       </Dialog>
                        <AlertDialog>
                         <AlertDialogTrigger asChild>
                            <Button variant="ghost" size="icon" aria-label={`Delete user ${user.username}`}>
