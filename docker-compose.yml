@@ -28,7 +28,7 @@ services:
     ports:
       - "5984:5984"
     volumes:
-      - couchdb_data:/opt/couchdb/data
+      - couchdbdata:/opt/couchdb/data
 
 volumes:
-  couchdb_data:
+  couchdbdata:
