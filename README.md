@@ -70,10 +70,14 @@ Authorization: Bearer <token>
 
 ## REST API (Users)
 
-- List users (no auth required):
+- List users (requires Bearer token):
 
 ```bash
-curl -sS http://localhost:9002/api/users | jq
+TOKEN="$(curl -sS http://localhost:9002/api/auth/login -H 'Content-Type: application/json' \
+  -d '{"username":"'$MYADMINCAPTIVA_USER'","password":"'$MYADMINCAPTIVA_PASS'"}' | jq -r .token)"
+
+curl -sS http://localhost:9002/api/users \
+  -H 'Authorization: Bearer '$TOKEN | jq
 ```
 
 - Create user (requires Bearer token):

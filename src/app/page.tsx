@@ -22,7 +22,7 @@ export default function Home() {
     }
     const load = async () => {
       try {
-        // GET is open for read-only; send auth header if present
+        // GET now requires auth; include bearer token
         const headers = authHeader();
         const res = await fetch('/api/users', { cache: 'no-store', headers: { ...headers } });
         if (res.ok) {
