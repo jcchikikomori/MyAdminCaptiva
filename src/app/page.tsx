@@ -7,11 +7,13 @@ import UserList from '@/components/user-list';
 import PageHeader from '@/components/page-header';
 import { useAuth } from '@/lib/auth/context';
 import { useRouter } from 'next/navigation';
+import { useToast } from '@/hooks/use-toast';
 
 export default function Home() {
   const [users, setUsers] = useState<User[]>([]);
   const { isAuthenticated, authHeader } = useAuth();
   const router = useRouter();
+  const { toast } = useToast();
 
   useEffect(() => {
     if (!isAuthenticated) {
@@ -26,31 +28,41 @@ export default function Home() {
         if (res.ok) {
           const data = await res.json();
           setUsers(data);
+        } else {
+          toast({
+            title: 'Failed to Load Users',
+            description: `Server responded with ${res.status}`,
+            variant: 'destructive',
+          });
         }
       } catch (e) {
-        // ignore; stay with empty list
+        toast({
+          title: 'Failed to Load Users',
+          description: 'Network error while fetching users.',
+          variant: 'destructive',
+        });
       }
     };
     load();
   }, [isAuthenticated]);
 
-  const handleAddUser = (data: AddUserFormValues) => {
-    // submit to API; on success, prepend to list
-    (async () => {
-      try {
-        const res = await fetch('/api/users', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', ...authHeader() },
-          body: JSON.stringify(data),
-        });
-        if (res.ok) {
-          const created: User = await res.json();
-          setUsers(prev => [created, ...prev]);
-        }
-      } catch (_) {
-        // no-op
+  const handleAddUser = async (data: AddUserFormValues): Promise<User> => {
+    try {
+      const res = await fetch('/api/users', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...authHeader() },
+        body: JSON.stringify(data),
+      });
+      if (!res.ok) {
+        const msg = await res.json().catch(() => ({ error: `Failed with status ${res.status}` }));
+        throw new Error(msg.error || 'Failed to create user');
       }
-    })();
+      const created: User = await res.json();
+      setUsers(prev => [created, ...prev]);
+      return created;
+    } catch (e: any) {
+      throw new Error(e?.message || 'Failed to create user');
+    }
   };
 
   const handleDeleteUser = (id: string) => {
@@ -59,9 +71,24 @@ export default function Home() {
         const res = await fetch(`/api/users/${id}`, { method: 'DELETE', headers: { ...authHeader() } });
         if (res.ok) {
           setUsers(prev => prev.filter(u => u.id !== id));
+          toast({
+            title: 'User Deleted',
+            description: 'The user has been removed successfully.',
+          });
+        } else {
+          const msg = await res.json().catch(() => ({ error: `Failed with status ${res.status}` }));
+          toast({
+            title: 'Failed to Delete User',
+            description: msg.error || 'Server error while deleting user.',
+            variant: 'destructive',
+          });
         }
       } catch (_) {
-        // no-op
+        toast({
+          title: 'Failed to Delete User',
+          description: 'Network error while deleting user.',
+          variant: 'destructive',
+        });
       }
     })();
   };

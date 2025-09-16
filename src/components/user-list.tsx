@@ -51,6 +51,7 @@ const formatBytes = (bytes: number) => {
 
 
 import { useState } from 'react';
+import { useToast } from '@/hooks/use-toast';
 
 export default function UserList({ users, onDeleteUser, onUpdateUser, canDelete = false }: UserListProps) {
   const [showPassword, setShowPassword] = useState<Record<string, boolean>>({});
@@ -60,6 +61,7 @@ export default function UserList({ users, onDeleteUser, onUpdateUser, canDelete 
   const [form, setForm] = useState<{ username: string; password: string; macAddress: string; uploadLimitBites: number; downloadLimitBites: number }>({ username: '', password: '', macAddress: '', uploadLimitBites: 0, downloadLimitBites: 0 });
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const { toast } = useToast();
 
   const togglePassword = (id: string) => setShowPassword(prev => ({ ...prev, [id]: !prev[id] }));
   const toggleMac = (id: string) => setShowMac(prev => ({ ...prev, [id]: !prev[id] }));
@@ -132,7 +134,7 @@ export default function UserList({ users, onDeleteUser, onUpdateUser, canDelete 
                     </TableCell>
                     {canDelete && (
                     <TableCell className="text-right space-x-1">
-                       <Dialog>
+                       <Dialog open={editingId === user.id} onOpenChange={(open) => setEditingId(open ? user.id : null)}>
                          <DialogTrigger asChild>
                            <Button
                              variant="ghost"
@@ -192,11 +194,13 @@ export default function UserList({ users, onDeleteUser, onUpdateUser, canDelete 
                                  const usernameExists = users.some(u => u.id !== (editingId as string) && u.username === form.username);
                                  const mac = form.macAddress?.trim();
                                  const macExists = mac ? users.some(u => u.id !== (editingId as string) && u.macAddress === mac) : false;
-                                 if (usernameExists || macExists) {
-                                   setError(usernameExists ? 'Username already exists' : 'MAC address already exists');
-                                   setSaving(false);
-                                   return;
-                                 }
+                                  if (usernameExists || macExists) {
+                                    const msg = usernameExists ? 'Username already exists' : 'MAC address already exists';
+                                    setError(msg);
+                                    toast({ title: 'Duplicate Found', description: msg, variant: 'destructive' });
+                                    setSaving(false);
+                                    return;
+                                  }
                                  try {
                                    const res = await fetch(`/api/users/${editingId}`, {
                                      method: 'PATCH',
@@ -210,11 +214,20 @@ export default function UserList({ users, onDeleteUser, onUpdateUser, canDelete 
                                    const updated: User = await res.json();
                                    onUpdateUser(updated);
                                    setEditingId(null);
-                                 } catch (e: any) {
-                                   setError(e?.message || 'Failed to update');
-                                 } finally {
-                                   setSaving(false);
-                                 }
+                                   toast({
+                                     title: 'User Updated',
+                                     description: `Changes to "${updated.username}" have been saved.`,
+                                   });
+                                  } catch (e: any) {
+                                  setError(e?.message || 'Failed to update');
+                                  toast({
+                                    title: 'Failed to Update User',
+                                    description: e?.message || 'Something went wrong while saving changes.',
+                                    variant: 'destructive',
+                                  });
+                                  } finally {
+                                    setSaving(false);
+                                  }
                                }}
                                disabled={saving}
                              >

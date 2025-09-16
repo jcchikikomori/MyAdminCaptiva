@@ -26,7 +26,7 @@ import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 
 interface AddUserFormProps {
-  onAddUser: (data: AddUserFormValues) => void;
+  onAddUser: (data: AddUserFormValues) => Promise<User>;
   existingUsers: User[];
 }
 
@@ -44,7 +44,7 @@ export default function AddUserForm({ onAddUser, existingUsers }: AddUserFormPro
     },
   });
 
-  const onSubmit = (values: AddUserFormValues) => {
+  const onSubmit = async (values: AddUserFormValues) => {
     const usernameExists = existingUsers.some(u => u.username === values.username);
     const mac = values.macAddress?.trim();
     const macExists = mac ? existingUsers.some(u => u.macAddress === mac) : false;
@@ -56,12 +56,20 @@ export default function AddUserForm({ onAddUser, existingUsers }: AddUserFormPro
       });
       return;
     }
-    onAddUser(values);
-    form.reset();
-    toast({
-      title: 'User Added',
-      description: `User "${values.username}" has been successfully created.`,
-    });
+    try {
+      const created = await onAddUser(values);
+      form.reset();
+      toast({
+        title: 'User Added',
+        description: `User "${created.username}" has been successfully created.`,
+      });
+    } catch (e: any) {
+      toast({
+        title: 'Failed to Add User',
+        description: e?.message || 'Something went wrong while creating the user.',
+        variant: 'destructive',
+      });
+    }
   };
 
   return (
