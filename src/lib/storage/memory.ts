@@ -25,5 +25,16 @@ export class MemoryStorageProvider implements StorageProvider {
   async deleteUser(id: string): Promise<void> {
     this.users = this.users.filter(u => u.id !== id);
   }
-}
 
+  async updateUser(id: string, input: AddUserInput): Promise<User> {
+    const idx = this.users.findIndex(u => u.id === id);
+    if (idx === -1) throw new Error('User not found');
+    const updated: User = {
+      ...this.users[idx],
+      ...input,
+      macAddress: input.macAddress || null,
+    };
+    this.users[idx] = updated;
+    return updated;
+  }
+}

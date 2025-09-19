@@ -16,5 +16,5 @@ export interface StorageProvider {
   getUsers(): Promise<User[]>;
   addUser(input: AddUserInput): Promise<User>;
   deleteUser(id: string): Promise<void>;
+  updateUser(id: string, input: AddUserInput): Promise<User>;
 }
-

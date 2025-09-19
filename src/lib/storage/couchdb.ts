@@ -83,5 +83,31 @@ export class CouchDbStorageProvider implements StorageProvider {
       throw new Error(`Failed to delete user from CouchDB: ${msg}`);
     }
   }
-}
 
+  async updateUser(id: string, input: AddUserInput): Promise<User> {
+    await this.ensureDb();
+    const getRes = await fetch(`${this.dbUrl}/${encodeURIComponent(id)}`, {
+      method: 'GET',
+      headers: { Accept: 'application/json' },
+    });
+    if (!getRes.ok) throw new Error('User not found');
+    const doc = await getRes.json();
+    const updated: User = {
+      id,
+      timeout: input.timeout ?? doc.timeout ?? 1200,
+      ...doc,
+      ...input,
+      macAddress: input.macAddress || null,
+    };
+    const res = await fetch(`${this.dbUrl}/${encodeURIComponent(id)}?rev=${encodeURIComponent(doc._rev)}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(updated),
+    });
+    if (!res.ok) {
+      const msg = await res.text();
+      throw new Error(`Failed to update user in CouchDB: ${msg}`);
+    }
+    return updated;
+  }
+}

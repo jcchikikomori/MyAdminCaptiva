@@ -4,6 +4,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 
 import { addUserFormSchema, type AddUserFormValues } from '@/lib/types';
+import type { User } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -25,10 +26,11 @@ import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 
 interface AddUserFormProps {
-  onAddUser: (data: AddUserFormValues) => void;
+  onAddUser: (data: AddUserFormValues) => Promise<User>;
+  existingUsers: User[];
 }
 
-export default function AddUserForm({ onAddUser }: AddUserFormProps) {
+export default function AddUserForm({ onAddUser, existingUsers }: AddUserFormProps) {
   const { toast } = useToast();
 
   const form = useForm<AddUserFormValues>({
@@ -42,13 +44,32 @@ export default function AddUserForm({ onAddUser }: AddUserFormProps) {
     },
   });
 
-  const onSubmit = (values: AddUserFormValues) => {
-    onAddUser(values);
-    form.reset();
-    toast({
-      title: 'User Added',
-      description: `User "${values.username}" has been successfully created.`,
-    });
+  const onSubmit = async (values: AddUserFormValues) => {
+    const usernameExists = existingUsers.some(u => u.username === values.username);
+    const mac = values.macAddress?.trim();
+    const macExists = mac ? existingUsers.some(u => u.macAddress === mac) : false;
+    if (usernameExists || macExists) {
+      toast({
+        title: 'Duplicate Found',
+        description: usernameExists ? 'Username already exists' : 'MAC address already exists',
+        variant: 'destructive',
+      });
+      return;
+    }
+    try {
+      const created = await onAddUser(values);
+      form.reset();
+      toast({
+        title: 'User Added',
+        description: `User "${created.username}" has been successfully created.`,
+      });
+    } catch (e: any) {
+      toast({
+        title: 'Failed to Add User',
+        description: e?.message || 'Something went wrong while creating the user.',
+        variant: 'destructive',
+      });
+    }
   };
 
   return (

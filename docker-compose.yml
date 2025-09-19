@@ -5,6 +5,9 @@ services:
       - "3000:3000"
     environment:
       - NODE_ENV=production
+      - AUTH_JWT_SECRET=${AUTH_JWT_SECRET}
+      - MYADMINCAPTIVA_USER=${MYADMINCAPTIVA_USER}
+      - MYADMINCAPTIVA_PASS=${MYADMINCAPTIVA_PASS}
       # Select storage provider: memory | file | couchdb
       - STORAGE_PROVIDER=file
       # File storage settings (only used when STORAGE_PROVIDER=file)
@@ -25,7 +28,7 @@ services:
     ports:
       - "5984:5984"
     volumes:
-      - couchdb_data:/opt/couchdb/data
+      - couchdbdata:/opt/couchdb/data
 
 volumes:
-  couchdb_data:
+  couchdbdata:

@@ -58,5 +58,18 @@ export class FileStorageProvider implements StorageProvider {
     const next = users.filter(u => u.id !== id);
     await this.write(next);
   }
-}
 
+  async updateUser(id: string, input: AddUserInput): Promise<User> {
+    const users = await this.read();
+    const idx = users.findIndex(u => u.id === id);
+    if (idx === -1) throw new Error('User not found');
+    const updated: User = {
+      ...users[idx],
+      ...input,
+      macAddress: input.macAddress || null,
+    };
+    users[idx] = updated;
+    await this.write(users);
+    return updated;
+  }
+}
